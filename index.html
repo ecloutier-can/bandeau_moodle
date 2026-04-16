@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur de bandeau Moodle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --tau-teal:    #1E3A5F;
+      --tau-slate:   #6B7280;
+      --tau-sand:    #D4CCCB;
+      --tau-taupe:   #A54A4A;
+      --tau-dark:    #000000;
+      --tau-mauve:   #6B5B95;
+      --tau-blue:    #A2B0C8;
+      --tau-amber:   #F0B851;
+      --aptos: 'Aptos', 'Aptos Display', Calibri, 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+      font-family: var(--aptos);
+      background: #eef0f3;
+      min-height: 100vh;
+    }
+
+    /* ── APP HEADER ── */
+    .app-header {
+      background: linear-gradient(135deg, var(--tau-teal) 0%, var(--tau-mauve) 60%, var(--tau-blue) 100%);
+      padding: 22px 32px;
+      color: white;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-header::before {
+      content: '';
+      position: absolute;
+      top: -40%; right: -4%;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    .app-header-inner { position: relative; z-index: 1; }
+    .app-header .surtitle {
+      font-size: 0.72em;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: .8;
+      margin-bottom: 4px;
+    }
+    .app-header h1 { font-size: 1.22em; font-weight: 700; letter-spacing: .3px; }
+    .app-header .subtitle { font-size: .82em; opacity: .85; margin-top: 4px; }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 22px 26px;
+      box-shadow: 0 2px 10px rgba(30,58,95,.09);
+    }
+    .card-label {
+      display: block;
+      font-size: .8em;
+      font-weight: 700;
+      color: var(--tau-teal);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 12px;
+    }
+
+    /* ── INPUTS ── */
+    input[type="text"], textarea {
+      width: 100%;
+      font-family: var(--aptos);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1.5px solid #d0d8e0;
+      font-size: 1em;
+      color: #333;
+      outline: none;
+      transition: border-color .2s;
+      resize: vertical;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--tau-teal); }
+
+    /* ── GRADIENT PRESETS ── */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .preset-btn {
+      border-radius: 9px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+      background: none;
+      box-shadow: 0 1px 5px rgba(0,0,0,.1);
+      transition: all .15s;
+    }
+    .preset-btn.active {
+      border-color: var(--tau-teal);
+      box-shadow: 0 0 0 3px rgba(61,94,107,.18);
+    }
+    .preset-swatch { height: 26px; }
+    .preset-name {
+      padding: 5px 8px;
+      font-size: .74em;
+      color: var(--tau-dark);
+      background: #fafafa;
+      font-family: var(--aptos);
+      text-align: left;
+    }
+    .preset-btn.active .preset-name { font-weight: 700; }
+
+    /* ── CUSTOM COLORS ── */
+    details summary {
+      cursor: pointer;
+      font-size: .82em;
+      color: var(--tau-taupe);
+      font-weight: 700;
+      letter-spacing: .3px;
+      user-select: none;
+      list-style: none;
+      margin-top: 6px;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    .custom-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+    .custom-col { flex: 1 1 150px; }
+    .custom-col-label { font-size: .78em; color: #555; font-weight: 700; margin-bottom: 8px; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+    .swatch {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid rgba(0,0,0,.12);
+      transition: transform .1s;
+    }
+    .swatch:hover { transform: scale(1.2); }
+    .swatch.selected { border: 2.5px solid #333; }
+    input[type="color"] {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      border: 2px solid #ccc;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* ── PARAGRAPHS ── */
+    .para-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+    .para-row textarea { flex: 1; min-height: 58px; line-height: 1.6; }
+    .btn-remove {
+      background: #fee; border: 1px solid #fcc;
+      border-radius: 6px; color: #c44;
+      cursor: pointer; padding: 7px 11px;
+      font-size: 1em; line-height: 1;
+      font-family: var(--aptos);
+      margin-top: 2px; flex-shrink: 0;
+    }
+    .btn-add {
+      width: 100%; margin-top: 4px;
+      background: none; border: 1.5px dashed var(--tau-slate);
+      border-radius: 8px; color: var(--tau-teal);
+      cursor: pointer; padding: 9px 16px;
+      font-size: .85em; font-weight: 700;
+      font-family: var(--aptos);
+      letter-spacing: .3px;
+    }
+    .btn-add:hover { background: #f0f4f6; }
+
+    /* ── TABS ── */
+    .tabs { display: flex; border-bottom: 1.5px solid #e8ecf0; }
+    .tab {
+      flex: 1; padding: 13px;
+      border: none; background: transparent;
+      color: #777; cursor: pointer;
+      font-weight: 700; font-size: .82em;
+      letter-spacing: .5px; text-transform: uppercase;
+      font-family: var(--aptos);
+      transition: all .15s;
+    }
+    .tab.active { background: var(--tau-teal); color: white; }
+
+    .tab-content { padding: 22px 26px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── PREVIEW ── */
+    #preview-container {
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(30,58,95,.15);
+    }
+    #preview-banner {
+      padding: 25px 30px;
+      position: relative;
+      overflow: hidden;
+    }
+    #preview-banner::before {
+      content:'';
+      position: absolute; top: -50%; right: -10%;
+      width: 200px; height: 200px;
+      background: rgba(255,255,255,.1); border-radius: 50%;
+    }
+    #preview-banner::after {
+      content:'';
+      position: absolute; bottom: -30%; left: -5%;
+      width: 150px; height: 150px;
+      background: rgba(255,255,255,.08); border-radius: 50%;
+    }
+    #preview-banner h2 {
+      position: relative; z-index: 1;
+      color: white; font-size: 1.5em;
+      font-family: var(--aptos);
+      font-weight: 600; letter-spacing: .5px; margin: 0;
+    }
+    #preview-body {
+      padding: 14px 30px 22px;
+      background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+    }
+    #preview-body p {
+      color: #44474d;
+      font-size: 1em;
+      font-family: var(--aptos);
+      line-height: 1.85;
+      margin: 0 0 8px;
+    }
+
+    /* ── CODE OUTPUT ── */
+    #code-output {
+      background: #1e2430;
+      color: #a8d8b8;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: .78em;
+      line-height: 1.7;
+      overflow: auto;
+      max-height: 360px;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .btn-copy {
+      width: 100%; margin-top: 12px;
+      padding: 13px; border-radius: 10px;
+      border: none; color: white;
+      font-weight: 700; font-size: .95em;
+      cursor: pointer; letter-spacing: .5px;
+      font-family: var(--aptos);
+      box-shadow: 0 3px 10px rgba(0,0,0,.15);
+      transition: all .2s;
+    }
+    .copy-hint {
+      font-size: .75em; color: #999;
+      text-align: center; margin-top: 9px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ APP HEADER ══ -->
+<div class="app-header">
+  <div class="app-header-inner">
+    <h1>🎨 Générateur de bandeau Moodle</h1>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ══ TITRE ══ -->
+  <div class="card">
+    <label class="card-label" for="input-title">Titre du bandeau</label>
+    <input type="text" id="input-title"
+      value="Introduction et présentation du cours"
+      placeholder="Ex : Introduction et présentation du cours"
+      oninput="update()">
+  </div>
+
+  <!-- ══ COULEURS ══ -->
+  <div class="card">
+    <span class="card-label">Couleurs du bandeau</span>
+    <div class="presets-grid" id="presets-grid"></div>
+
+    <details>
+      <summary>▸ Couleurs personnalisées</summary>
+      <div class="custom-row">
+        <div class="custom-col">
+          <div class="custom-col-label">Couleur 1</div>
+          <div class="swatches" id="swatches-1"></div>
+        </div>
+        <div class="custom-col">
+          <div class="custom-col-label">Couleur 2</div>
+          <div class="swatches" id="swatches-2"></div>
+        </div>
+        <div class="custom-col">
+          <div class="custom-col-label">Couleur 3</div>
+          <div class="swatches" id="swatches-3"></div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ══ CONTENU ══ -->
+  <div class="card">
+    <span class="card-label">Contenu de la section</span>
+    <div id="paragraphs-container"></div>
+    <button class="btn-add" onclick="addParagraph()">+ Ajouter un paragraphe</button>
+  </div>
+
+  <!-- ══ APERÇU / CODE ══ -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div class="tabs">
+      <button class="tab active" id="tab-apercu" onclick="switchTab('apercu')">👁 Aperçu</button>
+      <button class="tab" id="tab-code" onclick="switchTab('code')">💻 Code HTML</button>
+    </div>
+
+    <div class="tab-content">
+      <!-- Aperçu -->
+      <div class="tab-panel active" id="panel-apercu">
+        <div id="preview-container">
+          <div id="preview-banner">
+            <h2 id="preview-title">Introduction et présentation du cours</h2>
+          </div>
+          <div id="preview-body">
+            <p>Modules : ...</p>
+            <p>Objectifs : ...</p>
+            <p>Tableau des responsabilités</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code -->
+      <div class="tab-panel" id="panel-code">
+        <pre id="code-output"></pre>
+        <button class="btn-copy" id="btn-copy" onclick="copyCode()">📋 Copier le code HTML</button>
+        <p class="copy-hint">Coller ce code dans un bloc « Texte &amp; médias » → icône &lt;/&gt; (source HTML) dans Moodle.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ══════════════════════════════════════════
+   DATA
+══════════════════════════════════════════ */
+const PALETTE = [
+  { name: 'Bleu marine',   hex: '#1E3A5F' },
+  { name: 'Vert forêt',    hex: '#4A7C5E' },
+  { name: 'Violet',        hex: '#6B5B95' },
+  { name: 'Or',            hex: '#F0B851' },
+  { name: 'Rouge brique',  hex: '#A54A4A' },
+  { name: 'Bleu ardoise',  hex: '#A2B0C8' },
+  { name: 'Gris ardoise',  hex: '#6B7280' },
+  { name: 'Beige rosé',    hex: '#D4CCCB' },
+];
+
+const PRESETS = [
+  { label: 'Admin — Défaut',    from:'#1E3A5F', mid:'#6B5B95', to:'#A2B0C8' },
+  { label: 'Marine & forêt',    from:'#1E3A5F', mid:'#4A7C5E', to:'#D4CCCB' },
+  { label: 'Nuit comptable',    from:'#000000', mid:'#1E3A5F', to:'#6B5B95' },
+  { label: 'Ciel ardoise',      from:'#A2B0C8', mid:'#6B7280', to:'#D4CCCB' },
+  { label: 'Violet profond',    from:'#6B5B95', mid:'#A2B0C8', to:'#6B7280' },
+  { label: 'Marine & brique',   from:'#1E3A5F', mid:'#A54A4A', to:'#000000' },
+  { label: 'Accent or',         from:'#000000', mid:'#1E3A5F', to:'#F0B851' },
+  { label: 'Forêt & beige',     from:'#4A7C5E', mid:'#D4CCCB', to:'#A54A4A' },
+];
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let state = {
+  title: 'Introduction et présentation du cours',
+  activePreset: 0,
+  c1: PRESETS[0].from,
+  c2: PRESETS[0].mid,
+  c3: PRESETS[0].to,
+  useCustom: false,
+  paragraphs: ['Modules : ...', 'Objectifs : ...', 'Tableau des responsabilités'],
+};
+
+function gradient() {
+  return state.useCustom
+    ? { from: state.c1, mid: state.c2, to: state.c3 }
+    : { from: PRESETS[state.activePreset].from,
+        mid:  PRESETS[state.activePreset].mid,
+        to:   PRESETS[state.activePreset].to };
+}
+
+/* ══════════════════════════════════════════
+   BUILD UI ON LOAD
+══════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  buildPresets();
+  buildSwatches();
+  buildParagraphs();
+  update();
+});
+
+function buildPresets() {
+  const grid = document.getElementById('presets-grid');
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (i === 0 ? ' active' : '');
+    btn.id = 'preset-' + i;
+    btn.onclick = () => selectPreset(i);
+    btn.innerHTML = `
+      <div class="preset-swatch" style="background:linear-gradient(135deg,${p.from},${p.mid},${p.to})"></div>
+      <div class="preset-name">${p.label}</div>`;
+    grid.appendChild(btn);
+  });
+}
+
+function buildSwatches() {
+  [1,2,3].forEach(slot => {
+    const container = document.getElementById('swatches-' + slot);
+    PALETTE.forEach(c => {
+      const sw = document.createElement('div');
+      sw.className = 'swatch';
+      sw.title = c.name + ' ' + c.hex;
+      sw.style.background = c.hex;
+      sw.onclick = () => setCustomColor(slot, c.hex, sw);
+      container.appendChild(sw);
+    });
+    // free color picker
+    const picker = document.createElement('input');
+    picker.type = 'color';
+    picker.title = 'Couleur libre';
+    picker.oninput = () => setCustomColor(slot, picker.value, null);
+    container.appendChild(picker);
+  });
+}
+
+function buildParagraphs() {
+  const container = document.getElementById('paragraphs-container');
+  container.innerHTML = '';
+  state.paragraphs.forEach((text, i) => {
+    const row = document.createElement('div');
+    row.className = 'para-row';
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.placeholder = 'Paragraphe ' + (i+1) + '...';
+    ta.rows = 2;
+    ta.oninput = e => { state.paragraphs[i] = e.target.value; update(); };
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-remove';
+    btnDel.textContent = '✕';
+    btnDel.title = 'Supprimer';
+    btnDel.onclick = () => removeParagraph(i);
+    row.appendChild(ta);
+    row.appendChild(btnDel);
+    container.appendChild(row);
+  });
+}
+
+/* ══════════════════════════════════════════
+   INTERACTIONS
+══════════════════════════════════════════ */
+function selectPreset(i) {
+  state.activePreset = i;
+  state.useCustom = false;
+  state.c1 = PRESETS[i].from;
+  state.c2 = PRESETS[i].mid;
+  state.c3 = PRESETS[i].to;
+  document.querySelectorAll('.preset-btn').forEach((b,j) =>
+    b.classList.toggle('active', j === i));
+  update();
+}
+
+function setCustomColor(slot, hex, swatchEl) {
+  if (slot === 1) state.c1 = hex;
+  if (slot === 2) state.c2 = hex;
+  if (slot === 3) state.c3 = hex;
+  state.useCustom = true;
+  // clear preset active
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  // mark swatch selected
+  if (swatchEl) {
+    const container = swatchEl.parentElement;
+    container.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    swatchEl.classList.add('selected');
+  }
+  update();
+}
+
+function addParagraph() {
+  state.paragraphs.push('');
+  buildParagraphs();
+  update();
+}
+
+function removeParagraph(i) {
+  state.paragraphs.splice(i, 1);
+  buildParagraphs();
+  update();
+}
+
+function switchTab(tab) {
+  ['apercu','code'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+/* ══════════════════════════════════════════
+   UPDATE PREVIEW + CODE
+══════════════════════════════════════════ */
+function update() {
+  const g = gradient();
+  const title = document.getElementById('input-title').value;
+  state.title = title;
+
+  // ── preview banner ──
+  document.getElementById('preview-banner').style.background =
+    `linear-gradient(135deg, ${g.from} 0%, ${g.mid} 50%, ${g.to} 100%)`;
+  document.getElementById('preview-title').textContent = title || 'Titre de la section';
+
+  // ── preview body paragraphs ──
+  const body = document.getElementById('preview-body');
+  body.innerHTML = state.paragraphs
+    .filter(p => p.trim())
+    .map(p => `<p style="color:#44474d;font-size:1em;font-family:'Aptos','Aptos Display',Calibri,'Segoe UI',Arial,sans-serif;line-height:1.85;margin:0 0 8px 0;">${escHtml(p)}</p>`)
+    .join('');
+
+  // ── update copy button gradient ──
+  const btnCopy = document.getElementById('btn-copy');
+  btnCopy.style.background = `linear-gradient(135deg, ${g.from}, ${g.mid})`;
+
+  // ── code output ──
+  document.getElementById('code-output').textContent = generateHTML(title, g);
+}
+
+/* ══════════════════════════════════════════
+   HTML GENERATOR
+══════════════════════════════════════════ */
+const APTOS = "'Aptos', 'Aptos Display', Calibri, 'Segoe UI', Arial, sans-serif";
+
+function generateHTML(title, g) {
+  const paras = state.paragraphs
+    .filter(p => p.trim())
+    .map(p =>
+      `    <p style="color: #44474d; font-size: 1em; font-family: ${APTOS}; line-height: 1.85; margin: 0 0 8px 0;">\n      ${escHtml(p)}</p>`)
+    .join('\n');
+
+  return `<div style="max-width: 100%; margin: 20px auto; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 20px rgba(30, 58, 95, 0.15);">
+  <div style="background: linear-gradient(135deg, ${g.from} 0%, ${g.mid} 50%, ${g.to} 100%); padding: 25px 30px; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50%; right: -10%; width: 200px; height: 200px; background: rgba(255, 255, 255, 0.1); border-radius: 50%;"></div>
+    <div style="position: absolute; bottom: -30%; left: -5%; width: 150px; height: 150px; background: rgba(255, 255, 255, 0.08); border-radius: 50%;"></div>
+    <div style="position: relative; z-index: 1;">
+      <h2 style="color: white; font-size: 1.5em; font-family: ${APTOS}; font-weight: 600; letter-spacing: 0.5px; margin: 0 0 8px 0;">
+        ${escHtml(title || 'Titre de la section')}</h2>
+    </div>
+  </div>
+  <div style="padding: 10px 30px 20px; background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);">
+${paras}
+  </div>
+</div>`;
+}
+
+/* ══════════════════════════════════════════
+   COPY
+══════════════════════════════════════════ */
+function copyCode() {
+  const g = gradient();
+  const code = generateHTML(state.title, g);
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('btn-copy');
+    const original = btn.textContent;
+    btn.textContent = '✓ Copié dans le presse-papiers !';
+    btn.style.background = 'linear-gradient(135deg, #4caf50, #66bb6a)';
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.style.background = `linear-gradient(135deg, ${g.from}, ${gradient().mid})`;
+    }, 2200);
+  });
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function escHtml(str) {
+  return str
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
